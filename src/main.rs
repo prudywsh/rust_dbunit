@@ -1,3 +1,6 @@
+mod create_table_query_cleanup;
+
+use crate::create_table_query_cleanup::*;
 use mysql::prelude::*;
 use mysql::*;
 
@@ -25,6 +28,6 @@ fn main() {
     // let tables_names = get_tables_names(&mut conn);
     // println!("{:?}", tables_names);
 
-    let create_table_query = get_table_create_query(&mut conn, String::from("companies"));
+    let create_table_query = get_table_create_query(&mut conn, String::from("budgets"));
     println!("{:}", create_table_query);
 }
