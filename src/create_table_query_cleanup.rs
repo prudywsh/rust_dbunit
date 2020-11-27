@@ -3,7 +3,7 @@ use regex::Regex;
 
 pub fn remove_foreign_keys_constraints(create_table_query: &String) -> String {
   let rg = Regex::new(
-    r"(,\n)?[\s\t]*CONSTRAINT\s`\w+`\sFOREIGN\sKEY\s\(`\w+`\)\sREFERENCES\s`\w+`\s\(`\w+`\),?",
+    r"(,\n)?[\s\t]*CONSTRAINT\s`\w+`\sFOREIGN\sKEY\s\([`\w+`(,\s)?]+\)\sREFERENCES\s`\w+`\s\([`\w+`(, )?]+\),?",
   )
   .unwrap();
   let cleaned_create_table_query = rg.replace_all(create_table_query, "");
@@ -31,6 +31,41 @@ mod tests {
     );
 
     assert_eq!(super::remove_foreign_keys_constraints(&query), query);
+  }
+
+  #[test]
+  fn test_one_foreign_key_constraint_composed() {
+    let query = String::from("CREATE TABLE `ui_session_states` (
+      `id` varchar(14) NOT NULL,
+      `domain` varchar(255) NOT NULL,
+      `key` varchar(255) NOT NULL,
+      `data` json DEFAULT NULL,
+      `created_at` datetime DEFAULT NULL,
+      `updated_at` datetime DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      KEY `ui_session_states_updated_at` (`updated_at`),
+      KEY `ui_session_states_fk` (`key`,`domain`),
+      CONSTRAINT `ui_session_states_fk` FOREIGN KEY (`key`, `domain`) REFERENCES `ui_master_states` (`key`, `domain`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8");
+
+    let cleaned_query = String::from(
+      "CREATE TABLE `ui_session_states` (
+      `id` varchar(14) NOT NULL,
+      `domain` varchar(255) NOT NULL,
+      `key` varchar(255) NOT NULL,
+      `data` json DEFAULT NULL,
+      `created_at` datetime DEFAULT NULL,
+      `updated_at` datetime DEFAULT NULL,
+      PRIMARY KEY (`id`),
+      KEY `ui_session_states_updated_at` (`updated_at`),
+      KEY `ui_session_states_fk` (`key`,`domain`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8",
+    );
+
+    assert_eq!(
+      super::remove_foreign_keys_constraints(&query),
+      cleaned_query
+    );
   }
 
   #[test]

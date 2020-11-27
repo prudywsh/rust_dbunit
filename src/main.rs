@@ -22,12 +22,23 @@ fn get_table_create_query(conn: &mut mysql::PooledConn, table_name: String) -> S
     create_table_query
 }
 
+fn build_cleaned_create_tables_query(conn: &mut mysql::PooledConn) -> String {
+    let tables_names = get_tables_names(conn);
+    let mut cleaned_create_table_queries: Vec<String> = vec![];
+
+    for table_name in tables_names {
+        let create_table_query = get_table_create_query(conn, table_name);
+        let cleaned_create_table_query = remove_foreign_keys_constraints(&create_table_query);
+        cleaned_create_table_queries.push(cleaned_create_table_query);
+    }
+
+    cleaned_create_table_queries.join("\n")
+}
+
 fn main() {
     let mut conn = get_db_conn();
+    // let query = build_cleaned_create_tables_query(&mut conn);
 
-    // let tables_names = get_tables_names(&mut conn);
-    // println!("{:?}", tables_names);
-
-    let create_table_query = get_table_create_query(&mut conn, String::from("budgets"));
-    println!("{:}", create_table_query);
+    let query = get_table_create_query(&mut conn, String::from("ui_session_states"));
+    println!("{:}", query);
 }
