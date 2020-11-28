@@ -3,6 +3,35 @@ mod create_table_query_cleanup;
 use crate::create_table_query_cleanup::*;
 use mysql::prelude::*;
 use mysql::*;
+use std::time::SystemTime;
+
+fn generate_database_name() -> String {
+    let now_timestamp = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap()
+        .as_millis();
+
+    format!("spendesk_dev_{}", now_timestamp)
+}
+
+fn create_new_database() -> mysql::PooledConn {
+    let url = "mysql://root:root@localhost:3306";
+    let pool = Pool::new(url).unwrap();
+    let mut conn = pool.get_conn().unwrap();
+
+    let database_name = generate_database_name();
+
+    let create_database_query = format!("CREATE DATABASE {};", database_name);
+    create_database_query.run(&mut conn).unwrap();
+
+    let use_database_query = format!("USE {};", database_name);
+    use_database_query.run(&mut conn).unwrap();
+
+    let row: Vec<String> = conn.query_map("show tables;", |name| name).unwrap();
+    println!("{:?}", row);
+
+    conn
+}
 
 fn get_db_conn() -> mysql::PooledConn {
     let url = "mysql://root:root@localhost:3306/spendesk_dev";
@@ -11,8 +40,13 @@ fn get_db_conn() -> mysql::PooledConn {
 }
 
 fn get_tables_names(conn: &mut mysql::PooledConn) -> Vec<String> {
-    conn.query_map("SHOW TABLES;", |table_name| table_name)
-        .unwrap()
+    // conn.query_map("SHOW TABLES;", |table_name| table_name)
+    //    .unwrap()
+    vec![
+        String::from("companies"),
+        String::from("users"),
+        String::from("accounts"),
+    ]
 }
 
 fn get_table_create_query(conn: &mut mysql::PooledConn, table_name: String) -> String {
@@ -39,6 +73,6 @@ fn main() {
     let mut conn = get_db_conn();
     // let query = build_cleaned_create_tables_query(&mut conn);
 
-    let query = get_table_create_query(&mut conn, String::from("ui_session_states"));
-    println!("{:}", query);
+    // println!("{:}", query);
+    create_new_database();
 }
